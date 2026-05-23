@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Страница</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', sans-serif; background: #0e0e12; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .login-box { background: #17171d; border: 1px solid #222229; border-radius: 22px; padding: 36px; width: 320px; }
+  .login-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .login-box p { font-size: 13px; color: #555; margin-bottom: 24px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: #555; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; }
+  input { width: 100%; padding: 11px 14px; background: #111116; border: 1px solid #2a2a36; border-radius: 10px; color: #fff; font-family: inherit; font-size: 14px; outline: none; margin-bottom: 14px; transition: border-color 0.15s; }
+  input:focus { border-color: #4a4a66; }
+  input::placeholder { color: #3a3a4a; }
+  input.error { border-color: #ff4444; animation: shake 0.3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .err { font-size: 12px; color: #ff6060; margin-top: -10px; margin-bottom: 14px; display: none; }
+  .err.show { display: block; }
+  .btn-ok { width: 100%; padding: 12px; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: #fff; color: #0e0e12; transition: background 0.15s; }
+  .btn-ok:hover { background: #e8e8e8; }
+
+  .panel { display: none; width: 100%; max-width: 900px; padding: 48px 32px 80px; }
+  .panel.show { display: block; }
+  body.authed { align-items: flex-start; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+  .panel-header h1 { font-size: 24px; font-weight: 700; }
+  .logout { padding: 8px 16px; border-radius: 8px; background: transparent; border: 1px solid #2a2a36; color: #555; font-family: inherit; font-size: 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .logout:hover { color: #fff; border-color: #555; }
+  .add-form { background: #17171d; border: 1px solid #222229; border-radius: 16px; padding: 20px; margin-bottom: 28px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+  .field label { font-size: 11px; font-weight: 600; color: #555; letter-spacing: 0.8px; text-transform: uppercase; }
+  .field input { margin-bottom: 0; }
+  .add-btn { padding: 11px 24px; border-radius: 10px; background: #fff; color: #0e0e12; border: none; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; align-self: flex-end; transition: background 0.15s; }
+  .add-btn:hover { background: #e8e8e8; }
+  .links-list { display: flex; flex-direction: column; gap: 8px; }
+  .link-row { background: #17171d; border: 1px solid #222229; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .link-row img { width: 24px; height: 24px; border-radius: 5px; flex-shrink: 0; object-fit: contain; }
+  .link-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .link-url { font-size: 12px; color: #555; flex: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .del { background: none; border: none; color: #444; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; flex-shrink: 0; transition: color 0.15s; }
+  .del:hover { color: #ff6060; }
+  .empty { color: #444; font-size: 14px; padding: 16px 0; }
+  .status { font-size: 12px; color: #555; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="login-box" id="login-box">
+  <h2>🔐 Кабинет</h2>
+  <p>Только для владельца</p>
+  <label>Пароль</label>
+  <input id="ipass" type="password" placeholder="••••••••" autocomplete="off">
+  <div class="err" id="err">Неверный пароль</div>
+  <button class="btn-ok" onclick="checkPass()">Войти</button>
+</div>
+
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <h1>⚙️ Управление ссылками</h1>
+    <button class="logout" onclick="logout()">Выйти</button>
+  </div>
+  <div class="add-form">
+    <div class="field">
+      <label>Название</label>
+      <input id="iname" type="text" placeholder="YouTube" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Ссылка</label>
+      <input id="iurl" type="text" placeholder="https://youtube.com" autocomplete="off">
+    </div>
+    <button class="add-btn" onclick="addLink()">+ Добавить</button>
+  </div>
+  <div class="links-list" id="list"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const PASS = 'здьщлтшгнplmokniuy';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCk8NiKxPr2FHng5Uo6u6LWZ_iguXu3U14",
+  authDomain: "spike-2413a.firebaseapp.com",
+  databaseURL: "https://spike-2413a-default-rtdb.firebaseio.com",
+  projectId: "spike-2413a",
+  storageBucket: "spike-2413a.firebasestorage.app",
+  messagingSenderId: "760306310867",
+  appId: "1:760306310867:web:a3d43b802018b607d6be26"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+let linksData = {};
+
+function fav(url) {
+  try { return 'https://www.google.com/s2/favicons?sz=64&domain=' + new URL(url).hostname; }
+  catch { return ''; }
+}
+
+onValue(ref(db, 'links'), (snapshot) => {
+  linksData = snapshot.val() || {};
+  if (document.getElementById('panel').classList.contains('show')) renderList();
+});
+
+function renderList() {
+  const list = document.getElementById('list');
+  const items = Object.entries(linksData);
+  if (!items.length) { list.innerHTML = '<div class="empty">Ссылок пока нет</div>'; return; }
+  list.innerHTML = items.map(([key, it]) => `
+    <div class="link-row">
+      <img src="${fav(it.url)}" onerror="this.style.display='none'">
+      <span class="link-name">${it.name}</span>
+      <span class="link-url">${it.url}</span>
+      <button class="del" onclick="window.delLink('${key}')">×</button>
+    </div>
+  `).join('');
+}
+
+window.delLink = (key) => remove(ref(db, 'links/' + key));
+
+window.addLink = () => {
+  const name = document.getElementById('iname').value.trim();
+  const url  = document.getElementById('iurl').value.trim();
+  if (!name || !url) return;
+  push(ref(db, 'links'), { name, url: url.startsWith('http') ? url : 'https://' + url });
+  document.getElementById('iname').value = '';
+  document.getElementById('iurl').value = '';
+  document.getElementById('iname').focus();
+};
+
+window.checkPass = () => {
+  if (document.getElementById('ipass').value === PASS) {
+    document.getElementById('login-box').style.display = 'none';
+    document.getElementById('panel').classList.add('show');
+    document.body.classList.add('authed');
+    renderList();
+  } else {
+    const inp = document.getElementById('ipass');
+    inp.classList.add('error');
+    document.getElementById('err').classList.add('show');
+    inp.value = '';
+    inp.focus();
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+};
+
+window.logout = () => {
+  document.getElementById('login-box').style.display = '';
+  document.getElementById('panel').classList.remove('show');
+  document.body.classList.remove('authed');
+  document.getElementById('ipass').value = '';
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (!document.getElementById('panel').classList.contains('show')) window.checkPass();
+    else window.addLink();
+  }
+});
+</script>
+</body>
+</html>
